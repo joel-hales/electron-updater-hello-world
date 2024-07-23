@@ -77,6 +77,8 @@
       "repo": "electron-updater-hello-world"
     },
     "generateUpdatesFilesForAllChannels": true,
-    "differentialPackage": true
+    "nsis": {
+      "differentialPackage": true
+    }
   }
 }
