@@ -2,18 +2,19 @@ import { app, BrowserWindow, ipcMain, Notification } from "electron"
 import { autoUpdater } from "electron-updater"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
-import fs from "fs"
+import fs from "fs/promises"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const packageJsonPath = path.join(__dirname, "../package.json")
-let appVersion = "unknown"
-
-try {
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
-  appVersion = packageJson.version
-} catch (error) {
-  console.error("Error reading package.json:", error)
+const getAppVersion = async (): Promise<string> => {
+  try {
+    const packageJsonPath = path.join(__dirname, "../package.json")
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"))
+    return packageJson.version
+  } catch (error) {
+    console.error("Error reading package.json:", error)
+    return "unknown"
+  }
 }
 
 process.env.APP_ROOT = path.join(__dirname, "..")
@@ -28,8 +29,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 let win: BrowserWindow | null
 
-function createWindow() {
-  win = new BrowserWindow({
+const createWindow = (): BrowserWindow => {
+  const win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       contextIsolation: true,
@@ -39,18 +40,17 @@ function createWindow() {
     },
   })
 
-
   if (VITE_DEV_SERVER_URL) {
-    console.log("Loading from dev server:", VITE_DEV_SERVER_URL)
     win.loadURL(VITE_DEV_SERVER_URL)
   } else {
-    console.log("Loading from file:", path.join(RENDERER_DIST, "index.html"))
     win.loadFile(path.join(RENDERER_DIST, "index.html"))
   }
+
+  return win
 }
 
 ipcMain.handle("get-app-version", () => {
-  return appVersion
+  return getAppVersion
 })
 
 autoUpdater.setFeedURL({
@@ -64,7 +64,7 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = false
 
   if (process.env.GH_TOKEN) {
-    autoUpdater.requestHeaders = { Authorization: `token ${process.env.GH_TOKEN}` };
+    autoUpdater.requestHeaders = { Authorization: `token ${process.env.GH_TOKEN_EUHW}` };
     console.log("GitHub token set in autoUpdater")
   } else {
     console.warn("GH_TOKEN is not set");
@@ -141,7 +141,7 @@ function setupIpcHandlers() {
   })
 
   ipcMain.handle("get-app-version", () => {
-    return appVersion
+    return getAppVersion
   })
 }
 
@@ -158,18 +158,15 @@ app.on("activate", () => {
   }
 })
 
-app.whenReady().then(() => {
-  app.commandLine.appendSwitch('disable-http-cache')
-  createWindow()
+app.whenReady().then(async () => {
+  app.commandLine.appendSwitch("disable-http-cache")
+  win = createWindow()
   setupIpcHandlers()
 
-  if (process.env.NODE_ENV === "development") {
-    setInterval(() => {
-      if (win && !win.isFocused()) {
-        win.focus()
-      }
-    }, 1000)
-  } else {
+  const appVersion = await getAppVersion()
+  win.webContents.send("app-version", appVersion)
+
+  if (process.env.NODE_ENV !== "development") {
     setupAutoUpdater()
   }
 })
