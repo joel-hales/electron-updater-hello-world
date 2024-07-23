@@ -1,6 +1,6 @@
 {
   "name": "electron-updater-hello-world",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Electron Updater Hello World App",
   "main": "dist-electron/main.js",
   "type": "module",
@@ -75,6 +75,8 @@
       "provider": "github",
       "owner": "joel-hales",
       "repo": "electron-updater-hello-world"
-    }
+    },
+    "generateUpdatesFilesForAllChannels": true,
+    "differentialPackage": true
   }
 }
