@@ -6,16 +6,7 @@ import fs from "fs/promises"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const getAppVersion = async (): Promise<string> => {
-  try {
-    const packageJsonPath = path.join(__dirname, "../package.json")
-    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"))
-    return packageJson.version
-  } catch (error) {
-    console.error("Error reading package.json:", error)
-    return "unknown"
-  }
-}
+const getAppVersion = () => app.getVersion()
 
 process.env.APP_ROOT = path.join(__dirname, "..")
 
@@ -49,17 +40,13 @@ const createWindow = (): BrowserWindow => {
   return win
 }
 
-ipcMain.handle("get-app-version", () => {
-  return getAppVersion
-})
-
-autoUpdater.setFeedURL({
-  provider: "github",
-  owner: "joel-hales",
-  repo: "electron-updater-hello-world",
-})
-
 function setupAutoUpdater() {
+  autoUpdater.setFeedURL({
+    provider: "github",
+    owner: "joel-hales",
+    repo: "electron-updater-hello-world",
+  })
+
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
 
@@ -116,6 +103,10 @@ function setupAutoUpdater() {
 }
 
 function setupIpcHandlers() {
+  ipcMain.handle("get-app-version", () => {
+    return getAppVersion()
+  })
+  
   ipcMain.handle("start-download", () => {
     return autoUpdater.downloadUpdate().catch((err) => {
       console.error("Error downloading update:", err)
@@ -138,10 +129,6 @@ function setupIpcHandlers() {
         throw err
       })
     }
-  })
-
-  ipcMain.handle("get-app-version", () => {
-    return getAppVersion
   })
 }
 
