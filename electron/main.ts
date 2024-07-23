@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain, Notification } from "electron"
 import { autoUpdater } from "electron-updater"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
-import fs from "fs/promises"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
